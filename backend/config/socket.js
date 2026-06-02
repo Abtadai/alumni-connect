@@ -4,8 +4,19 @@ const db = require("../config/db");
 const initSocket = (server) => {
   const { Server } = require("socket.io");
 
+  // io = new Server(server, {
+  //   cors: { origin: "http://localhost:3000" },
+  // });
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "https://alumni-connect-theta-one.vercel.app"
+  ];
   io = new Server(server, {
-    cors: { origin: "http://localhost:3000" },
+    cors: {
+      origin: allowedOrigins,
+      methods: ["GET", "POST"],
+      credentials: true
+    },
   });
 
   io.on("connection", (socket) => {
