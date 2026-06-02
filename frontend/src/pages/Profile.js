@@ -55,7 +55,7 @@ function Profile() {
 
         <div className="profile-avatar">
           {profile.profile_image ? (
-            <img src={`http://localhost:5000${profile.profile_image}`} alt="" />
+            <img src={`https://alumni-connect-md7u.onrender.com${profile.profile_image}`} alt="" />
           ) : (
             <div className="avatar-placeholder"></div>
           )}
@@ -148,7 +148,7 @@ function Profile() {
                   <img
                     src={
                       p.author_image
-                        ? `http://localhost:5000${p.author_image}`
+                        ? `https://alumni-connect-md7u.onrender.com${p.author_image}`
                         : "/default-avatar.png"
                     }
                     alt=""
@@ -171,7 +171,7 @@ function Profile() {
                 {/* IMAGE */}
                 {p.image && (
                   <img
-                    src={`http://localhost:5000${p.image}`}
+                    src={`https://alumni-connect-md7u.onrender.com${p.image}`}
                     alt=""
                     className="post-image"
                   />

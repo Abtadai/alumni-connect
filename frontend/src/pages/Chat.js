@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import api from "../api";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://alumni-connect-md7u.onrender.com");
 
 function Chat() {
   const userId = Number(localStorage.getItem("userId"));

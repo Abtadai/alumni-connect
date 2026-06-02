@@ -66,7 +66,7 @@ exports.register = async (req, res) => {
           await transporter.sendMail({
             to: email,
             subject: "Verify Email",
-            html: `<a href="http://localhost:5000/api/auth/verify/${token}">Verify</a>`,
+            html: `<a href="https://alumni-connect-md7u.onrender.com/api/auth/verify/${token}">Verify</a>`,
           });
         } catch (mailErr) {
           console.error("Mail error:", mailErr);

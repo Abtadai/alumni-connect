@@ -240,7 +240,7 @@ function Feed() {
                 <div className="post-avatar">
                   {post.author_image ? (
                     <img
-                      src={`http://localhost:5000${post.author_image}`}
+                      src={`https://alumni-connect-md7u.onrender.com${post.author_image}`}
                       alt="author"
                     />
                   ) : (
@@ -267,7 +267,7 @@ function Feed() {
 
               {post.image_url && (
                 <img
-                  src={`http://localhost:5000${post.image_url}`}
+                  src={`https://alumni-connect-md7u.onrender.com${post.image_url}`}
                   alt="post"
                 />
               )}
