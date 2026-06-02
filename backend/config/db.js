@@ -1,6 +1,8 @@
 const mysql = require("mysql2");
 require("dotenv").config();
 const fs = require("fs");
+const path = require("path");
+
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -10,7 +12,9 @@ const db = mysql.createConnection({
 
   ssl: {
     // rejectUnauthorized: true
-    ca: fs.readFileSync(process.env.CA)
+    ca: fs.readFileSync(
+      path.join(__dirname, "../certs/isrgrootx1.pem")
+    )
   }
 });
 
