@@ -2,6 +2,7 @@ const db = require("../config/db");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const createTransporter = require("../utils/mailer");
+const jwt = require("jsonwebtoken");
 
 /* ================= REGISTER ================= */
 exports.register = async (req, res) => {
@@ -27,57 +28,95 @@ exports.register = async (req, res) => {
       VALUES (?, ?, ?, ?, false, true, ?)`,
       [email, phone, hash, role, token],
       async (err, result) => {
+
+        /* ================= CLEAN ERROR HANDLING ================= */
         if (err) {
-          console.error("User insert error:", err);
-          return res.status(400).send("User already exists");
+          console.error("🔥 REGISTER ERROR:", err.sqlMessage || err);
+
+          // Duplicate user (email or phone unique constraint)
+          if (err.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({
+              success: false,
+              message: "User already exists",
+            });
+          }
+
+          // Any other DB error
+          return res.status(500).json({
+            success: false,
+            message: "Database error during registration",
+            error: err.sqlMessage || err.message,
+          });
+        }
+
+        if (!result || !result.insertId) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to create user",
+          });
         }
 
         const userId = result.insertId;
 
-        /* ===== INSERT INTO STUDENT / ALUMNI ===== */
+        /* ================= STUDENT ================= */
         if (role === "STUDENT") {
           db.query(
-            `INSERT INTO Student (user_id, full_name, department, batch)
+            `INSERT INTO student (user_id, full_name, department, batch_year)
              VALUES (?, ?, ?, ?)`,
             [userId, full_name, department, batch],
             (err) => {
               if (err) {
-                console.error("Student insert error:", err);
-              }
-            }
-          );
-        } else if (role === "ALUMNI") {
-          db.query(
-            `INSERT INTO Alumni (user_id, full_name, department, batch, company, designation)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [userId, full_name, department, batch, company, designation],
-            (err) => {
-              if (err) {
-                console.error("Alumni insert error:", err);
+                console.error("Student insert error:", err.sqlMessage || err);
               }
             }
           );
         }
 
-        /* ===== SEND EMAIL ===== */
+        /* ================= ALUMNI ================= */
+        else if (role === "ALUMNI") {
+          db.query(
+            `INSERT INTO alumni_profile 
+             (user_id, full_name, department, batch_year, company, designation)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [userId, full_name, department, batch, company, designation],
+            (err) => {
+              if (err) {
+                console.error("Alumni insert error:", err.sqlMessage || err);
+              }
+            }
+          );
+        }
+
+        /* ================= EMAIL ================= */
         try {
           const transporter = await createTransporter();
 
           await transporter.sendMail({
             to: email,
             subject: "Verify Email",
-            html: `<a href="https://alumni-connect-md7u.onrender.com/api/auth/verify/${token}">Verify</a>`,
+            html: `
+              <h3>Verify your email</h3>
+              <a href="https://alumni-connect-md7u.onrender.com/api/auth/verify/${token}">
+                Click to Verify
+              </a>
+            `,
           });
         } catch (mailErr) {
           console.error("Mail error:", mailErr);
         }
 
-        res.send("Registered successfully. Check your email.");
+        return res.status(201).json({
+          success: true,
+          message: "Registered successfully. Check your email.",
+        });
       }
     );
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Server error");
+    console.error("🔥 SERVER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -89,41 +128,68 @@ exports.login = (req, res) => {
     "SELECT * FROM userauth WHERE email = ?",
     [email],
     async (err, rows) => {
-      
+
       if (err) {
-        console.error(err);
-        return res.status(500).send("Server error");
+        console.error("Login DB error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Server error",
+        });
       }
 
-      if (!rows.length) return res.send("User not found");
+      if (!rows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
 
       const user = rows[0];
 
-      if (!user.is_verified) return res.send("Verify email");
+      if (!user.is_verified) {
+        return res.status(403).json({
+          success: false,
+          message: "Verify email first",
+        });
+      }
 
       if (user.is_active === 0) {
-        return res.status(403).send("Account deactivated");
+        return res.status(403).json({
+          success: false,
+          message: "Account deactivated",
+        });
       }
 
       const ok = await bcrypt.compare(password, user.password_hash);
-      if (!ok) return res.send("Wrong password");
+      if (!ok) {
+        return res.status(401).json({
+          success: false,
+          message: "Wrong password",
+        });
+      }
 
-      const jwt = require("jsonwebtoken");
+      if (!process.env.JWT_SECRET) {
+        return res.status(500).json({
+          success: false,
+          message: "JWT secret missing in environment variables",
+        });
+      }
 
-const token = jwt.sign(
-  {
-    user_id: user.user_id,
-    role: user.role,
-  },
-  process.env.JWT_SECRET, // 👈 comes from .env
-  { expiresIn: "7d" }
-);
+      const token = jwt.sign(
+        {
+          user_id: user.user_id,
+          role: user.role,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
 
-res.json({
-  token,
-  user_id: user.user_id,
-  role: user.role,
-});
+      return res.json({
+        success: true,
+        token,
+        user_id: user.user_id,
+        role: user.role,
+      });
     }
   );
 };
@@ -137,13 +203,24 @@ exports.verify = (req, res) => {
     [token],
     (err, result) => {
       if (err) {
-        console.error(err);
-        return res.status(500).send("Server error");
+        console.error("Verify error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Server error",
+        });
       }
 
-      if (!result.affectedRows) return res.send("Invalid token");
+      if (!result.affectedRows) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid token",
+        });
+      }
 
-      res.send("Email verified successfully");
+      return res.json({
+        success: true,
+        message: "Email verified successfully",
+      });
     }
   );
 };
