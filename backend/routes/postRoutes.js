@@ -70,20 +70,36 @@ router.get("/user/:userId", (req, res) => {
   const userId = req.params.userId;
 
   const sql = `
-    SELECT 
-      p.*,
-      a.full_name AS author_name,
-      a.profile_image AS author_image,
-      u.user_id AS author_user_id
+SELECT
+  p.*,
 
-    FROM Post p
-    JOIN Alumni a ON p.created_by = a.alumni_id
-    JOIN UserAuth u ON a.user_id = u.user_id
+  CASE
+    WHEN u.role='STUDENT' THEN s.full_name
+    WHEN u.role='ALUMNI' THEN a.full_name
+  END AS author_name,
 
-    WHERE u.user_id = ?
+  CASE
+    WHEN u.role='STUDENT' THEN s.profile_image
+    WHEN u.role='ALUMNI' THEN a.profile_image
+  END AS author_image,
 
-    ORDER BY p.created_at DESC
-  `;
+  u.user_id AS author_user_id
+
+FROM post p
+
+JOIN userauth u
+  ON p.created_by = u.user_id
+
+LEFT JOIN student s
+  ON u.user_id = s.user_id
+
+LEFT JOIN alumni_profile a
+  ON u.user_id = a.user_id
+
+WHERE u.user_id = ?
+
+ORDER BY p.created_at DESC
+`;
 
   db.query(sql, [userId], (err, rows) => {
     if (err) {
@@ -97,8 +113,8 @@ router.get("/user/:userId", (req, res) => {
 
 // ================= LIKE =================
 router.post("/like", (req, res) => {
- const { post_id } = req.body;
- const user_id = req.user.user_id;
+  const { post_id } = req.body;
+  const user_id = req.user.user_id;
 
   db.query(
     "INSERT INTO PostLike (post_id, user_id) VALUES (?, ?)",
@@ -111,8 +127,8 @@ router.post("/like", (req, res) => {
 });
 
 router.delete("/like", (req, res) => {
-   const { post_id } = req.body;
-   const user_id = req.user.user_id;
+  const { post_id } = req.body;
+  const user_id = req.user.user_id;
 
   db.query(
     "DELETE FROM PostLike WHERE post_id=? AND user_id=?",

@@ -39,35 +39,43 @@ router.get("/by-ids", (req, res) => {
 router.get("/:id", (req, res) => {
   const userId = req.params.id;
 
-  const sql = `
-  SELECT 
-    u.user_id,
-    u.email,
-    u.phone_number,
-    u.role,
+ const sql = `
+SELECT
+  u.user_id,
+  u.email,
+  u.phone_number,
+  u.role,
 
-    CASE 
-      WHEN u.role = 'STUDENT' THEN s.full_name
-      WHEN u.role = 'ALUMNI' THEN a.full_name
-    END AS full_name,
+  CASE
+    WHEN u.role='STUDENT' THEN s.full_name
+    WHEN u.role='ALUMNI' THEN a.full_name
+  END AS full_name,
 
-    CASE 
-      WHEN u.role = 'STUDENT' THEN s.department
-      WHEN u.role = 'ALUMNI' THEN a.department
-    END AS department,
+  CASE
+    WHEN u.role='STUDENT' THEN s.department
+    WHEN u.role='ALUMNI' THEN a.department
+  END AS department,
 
-    CASE 
-      WHEN u.role = 'STUDENT' THEN s.batch
-      WHEN u.role = 'ALUMNI' THEN a.batch
-    END AS batch,
+  CASE
+    WHEN u.role='STUDENT' THEN s.batch_year
+    WHEN u.role='ALUMNI' THEN a.batch_year
+  END AS batch_year,
 
-    a.company,
-    a.designation
+  a.company,
+  a.designation,
 
-  FROM userauth u
-  LEFT JOIN student s ON u.user_id = s.user_id
-  LEFT JOIN alumni a ON u.user_id = a.user_id
-  WHERE u.user_id = ?
+  CASE
+    WHEN u.role='STUDENT' THEN s.profile_image
+    WHEN u.role='ALUMNI' THEN a.profile_image
+  END AS profile_image
+
+FROM userauth u
+LEFT JOIN student s
+  ON u.user_id = s.user_id
+LEFT JOIN alumni_profile a
+  ON u.user_id = a.user_id
+
+WHERE u.user_id = ?
 `;
 
   db.query(sql, [userId], (err, rows) => {
