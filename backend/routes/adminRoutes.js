@@ -11,7 +11,7 @@ router.use(adminOnly);
 router.get("/users", (req, res) => {
   const sql = `
     SELECT user_id, email, role, is_active
-    FROM UserAuth
+    FROM userauth
     ORDER BY created_at DESC
   `;
 
@@ -37,7 +37,7 @@ router.patch("/users/:id/status", (req, res) => {
   }
 
   db.query(
-    "UPDATE UserAuth SET is_active=? WHERE user_id=?",
+    "UPDATE userauth SET is_active=? WHERE user_id=?",
     [is_active, id],
     (err) => {
       if (err) return res.status(500).send("Error updating user");

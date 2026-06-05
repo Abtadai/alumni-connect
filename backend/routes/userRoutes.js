@@ -19,9 +19,9 @@ router.get("/by-ids", (req, res) => {
     SELECT 
       u.user_id,
       COALESCE(a.full_name, s.full_name) AS full_name
-    FROM UserAuth u
-    LEFT JOIN Alumni a ON u.user_id = a.user_id
-    LEFT JOIN Student s ON u.user_id = s.user_id
+    FROM userauth u
+    LEFT JOIN alumni_profile a ON u.user_id = a.user_id
+    LEFT JOIN student s ON u.user_id = s.user_id
     WHERE u.user_id IN (?)
   `;
 

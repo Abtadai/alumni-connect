@@ -24,9 +24,9 @@ router.get("/:id", (req, res) => {
 
       s.department
 
-    FROM UserAuth u
-    LEFT JOIN Alumni a ON u.user_id = a.user_id
-    LEFT JOIN Student s ON u.user_id = s.user_id
+    FROM userauth u
+    LEFT JOIN alumni_profile a ON u.user_id = a.user_id
+    LEFT JOIN student s ON u.user_id = s.user_id
     WHERE u.user_id = ?
   `;
 
@@ -54,7 +54,7 @@ router.put("/:id", (req, res) => {
 
   // ✅ ONLY phone update (no bio)
   db.query(
-    "UPDATE UserAuth SET phone_number=? WHERE user_id=?",
+    "UPDATE userauth SET phone_number=? WHERE user_id=?",
     [phone_number, userId],
     (err) => {
       if (err) {
@@ -63,7 +63,7 @@ router.put("/:id", (req, res) => {
       }
 
       db.query(
-        "SELECT role FROM UserAuth WHERE user_id=?",
+        "SELECT role FROM userauth WHERE user_id=?",
         [userId],
         (err, rows) => {
           if (err || !rows.length) {
@@ -74,7 +74,7 @@ router.put("/:id", (req, res) => {
 
           if (role === "STUDENT") {
             db.query(
-              "UPDATE Student SET full_name=?, batch=? WHERE user_id=?",
+              "UPDATE student SET full_name=?, batch=? WHERE user_id=?",
               [full_name, batch, userId],
               (err) => {
                 if (err) {
@@ -88,7 +88,7 @@ router.put("/:id", (req, res) => {
           } 
           else if (role === "ALUMNI") {
             db.query(
-              "UPDATE Alumni SET full_name=?, batch=?, company=?, designation=? WHERE user_id=?",
+              "UPDATE alumni_profile SET full_name=?, batch=?, company=?, designation=? WHERE user_id=?",
               [full_name, batch, company, designation, userId],
               (err) => {
                 if (err) {
