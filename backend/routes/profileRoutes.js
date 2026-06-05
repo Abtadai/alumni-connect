@@ -47,7 +47,7 @@ router.put("/:id", (req, res) => {
   const {
     full_name,
     phone_number,
-    batch,
+    batch_year,
     company,
     designation
   } = req.body;
@@ -74,8 +74,8 @@ router.put("/:id", (req, res) => {
 
           if (role === "STUDENT") {
             db.query(
-              "UPDATE student SET full_name=?, batch=? WHERE user_id=?",
-              [full_name, batch, userId],
+              "UPDATE student SET full_name=?, batch_year=? WHERE user_id=?",
+              [full_name, batch_year, userId],
               (err) => {
                 if (err) {
                   console.error(err);
@@ -88,8 +88,8 @@ router.put("/:id", (req, res) => {
           } 
           else if (role === "ALUMNI") {
             db.query(
-              "UPDATE alumni_profile SET full_name=?, batch=?, company=?, designation=? WHERE user_id=?",
-              [full_name, batch, company, designation, userId],
+              "UPDATE alumni_profile SET full_name=?, batch_year=?, company=?, designation=? WHERE user_id=?",
+              [full_name, batch_year, company, designation, userId],
               (err) => {
                 if (err) {
                   console.error(err);
