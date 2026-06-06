@@ -21,8 +21,8 @@ function Feed() {
   const [activePost, setActivePost] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
-
-  const userId = Number(localStorage.getItem("userId"));
+//  ======
+const userId = Number(localStorage.getItem("userId"));
   const role = localStorage.getItem("role");
   const isAlumni = role === "ALUMNI";
 
@@ -99,12 +99,12 @@ function Feed() {
 
     const req = isLiked
       ? api.delete("/post/like", {
-          data: { post_id: postId, user_id: userId },
-        })
+        data: { post_id: postId, user_id: userId },
+      })
       : api.post("/post/like", {
-          post_id: postId,
-          user_id: userId,
-        });
+        post_id: postId,
+        user_id: userId,
+      });
 
     req.then(() => {
       setLikedPosts({ ...likedPosts, [postId]: !isLiked });
@@ -129,7 +129,22 @@ function Feed() {
       setActivePost(postId);
     });
   };
+  // Remember , here we make a change .
+  /* ================= DELETE POST ================= */
+  const deletePost = (postId) => {
+    if (!window.confirm("Delete this post permanently?")) return;
 
+    api.delete(`/post/${postId}`)
+      .then(() => {
+        // remove from UI instantly (no reload needed)
+        setPosts((prev) => prev.filter((p) => p.post_id !== postId));
+        setFilteredPosts((prev) => prev.filter((p) => p.post_id !== postId));
+      })
+      .catch((err) => {
+        console.error("Delete failed:", err);
+        alert("Failed to delete post");
+      });
+  };
   const addComment = () => {
     if (!commentText.trim()) return;
 
@@ -146,6 +161,21 @@ function Feed() {
       toggleComments(activePost);
     });
   };
+
+  // // remember , here we make a change .
+  // const deletePost = (postId) => {
+  //   if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+  //   api.delete(`/post/${postId}`)
+  //     .then(() => {
+  //       setPosts((prev) => prev.filter((p) => p.post_id !== postId));
+  //       setFilteredPosts((prev) => prev.filter((p) => p.post_id !== postId));
+  //     })
+  //     .catch((err) => {
+  //       console.error("Delete failed:", err);
+  //       alert("Failed to delete post");
+  //     });
+  // };
 
   return (
     <div className="feed-layout">
@@ -297,6 +327,17 @@ function Feed() {
                     }
                   >
                     ✉️ Message
+                  </div>
+                )}
+
+                {/* DELETE BUTTON (only for owner) */}
+                {Number(post.author_user_id) === Number(userId) && (
+                  <div
+                    className="icon-wrap"
+                    style={{ color: "red" }}
+                    onClick={() => deletePost(post.post_id)}
+                  >
+                    🗑️ Delete
                   </div>
                 )}
               </div>

@@ -25,7 +25,34 @@ router.get("/feed", (req, res) => {
     }
   );
 });
+// ================= GET FEED =================
+router.get("/feed", (req, res) => {
+  const sql = `
+    SELECT 
+      p.post_id,
+      p.post_type,
+      p.content,
+      p.image_url,
+      p.external_link,
+      p.created_at,
+      p.created_by,
 
+      u.user_id AS author_user_id
+
+    FROM Post p
+    JOIN userauth u ON p.created_by = u.user_id
+    ORDER BY p.created_at DESC
+  `;
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error("Feed error:", err);
+      return res.status(500).send("Error fetching feed");
+    }
+
+    res.json(rows);
+  });
+});
 // ================= CREATE POST =================
 // Remember this i changed the route to "/" instead of "/create" for better RESTful design. Adjust frontend accordingly.
 router.post("/", upload.single("image"), (req, res) => {
@@ -183,6 +210,30 @@ router.get("/:postId/comments/count", (req, res) => {
     [req.params.postId],
     (err, result) => {
       res.json({ count: result[0].count });
+    }
+  );
+});
+
+// ================= DELETE POST =================
+router.delete("/:postId", (req, res) => {
+  const postId = req.params.postId;
+  const userId = req.user.user_id;
+
+  // only allow owner to delete
+  db.query(
+    "DELETE FROM Post WHERE post_id = ? AND created_by = ?",
+    [postId, userId],
+    (err, result) => {
+      if (err) {
+        console.error("Delete error:", err);
+        return res.status(500).send("Delete failed");
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(403).send("Not allowed to delete this post");
+      }
+
+      res.send("Post deleted successfully");
     }
   );
 });
